@@ -45,17 +45,28 @@ def _guild_entry(data: dict, guild_id: str) -> dict:
 
 
 class FxtwitterBot(discord.Client):
+    def __init__(self):
+        intents = discord.Intents.default()
+        intents.message_content = True
+        super().__init__(intents=intents)
+        self.tree = discord.app_commands.CommandTree(self)
+
+        @self.tree.command(
+            name="fxtwitter", description="Show link conversion stats for this server"
+        )
+        async def stats(interaction: discord.Interaction):
+            data = _load_stats()
+            g = _guild_entry(data, str(interaction.guild_id))
+            STATS_FILE.write_text(json.dumps(data))
+            await interaction.response.send_message(
+                f"Stats for **{interaction.guild.name}**: Total {g['conversions']}, Today {g['today']}"
+            )
+
+    async def setup_hook(self):
+        await self.tree.sync()
+
     async def on_message(self, message: discord.Message) -> None:
         if message.author.bot:
-            return
-
-        if message.content.lower() == "/fxtwitter stats":
-            data = _load_stats()
-            g = _guild_entry(data, str(message.guild.id))
-            STATS_FILE.write_text(json.dumps(data))
-            await message.channel.send(
-                f"Stats for **{message.guild.name}**: Total {g['conversions']}, Today {g['today']}"
-            )
             return
 
         rewritten = rewrite_message(message.content)
