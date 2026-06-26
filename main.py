@@ -39,7 +39,7 @@ class FxtwitterBot(discord.Client):
             self.record_conversion(str(message.guild.id), str(message.id), rewritten)
             try:
                 await message.delete()
-            except:
+            except discord.HTTPException:
                 pass
 
     def get_guild_stats(self, guild_id: str):
