@@ -17,7 +17,10 @@ X_URL_RE = re.compile(
 def rewrite_message(content: str) -> str | None:
     if not X_URL_RE.search(content):
         return None
-    def _swap(m): return f"{m.group('prefix')}fxtwitter.com{m.group('suffix')}"
+
+    def _swap(m):
+        return f"{m.group('prefix')}fxtwitter.com{m.group('suffix')}"
+
     return X_URL_RE.sub(_swap, content)
 
 
@@ -26,7 +29,7 @@ class FxtwitterBot(discord.Client):
         if message.author.bot:
             return
 
-        if message.content.lower() == '/fxtwitter stats':
+        if message.content.lower() == "/fxtwitter stats":
             stats = self.get_guild_stats(str(message.guild.id))
             await message.channel.send(
                 f"Stats for **{message.guild.name}**: Total {stats['conversions']}, Today {stats['today']}"
