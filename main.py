@@ -1,16 +1,13 @@
 import os
 import re
-import sys
+from datetime import datetime
+from pathlib import Path
 
 import discord
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Match http(s)://(www.)?(x|twitter).com/<path> URLs.
-# Capture the host so we can replace it case-insensitively while keeping
-# scheme, optional www, path and query intact. Stop the path at
-# whitespace or delimiters that shouldn't be part of a URL.
 X_URL_RE = re.compile(
     r"(?P<prefix>https?://(?:www\.)?)(?P<host>x|twitter)\.com(?P<suffix>/[^\s<>\"')\]]*)",
     re.IGNORECASE,
@@ -18,85 +15,65 @@ X_URL_RE = re.compile(
 
 
 def rewrite_message(content: str) -> str | None:
-    """Replace x.com/twitter.com hosts with fxtwitter.com.
-
-    Returns the rewritten text, or None if no x/twitter URL was present.
-    """
     if not X_URL_RE.search(content):
         return None
-
-    def _swap(match: re.Match[str]) -> str:
-        return f"{match.group('prefix')}fxtwitter.com{match.group('suffix')}"
-
+    def _swap(m): return f"{m.group('prefix')}fxtwitter.com{m.group('suffix')}"
     return X_URL_RE.sub(_swap, content)
 
 
 class FxtwitterBot(discord.Client):
-    def __init__(self) -> None:
-        # We only need to read messages; content intent is required to see
-        # the body of messages from other users.
-        intents = discord.Intents.default()
-        intents.message_content = True
-        super().__init__(intents=intents)
-
     async def on_message(self, message: discord.Message) -> None:
-        # Ignore our own messages and messages from other bots.
         if message.author.bot:
             return
 
-        rewritten = rewrite_message(message.content)
-        if rewritten is None:
+        if message.content.lower() == '/fxtwitter stats':
+            stats = self.get_guild_stats(str(message.guild.id))
+            await message.channel.send(
+                f"Stats for **{message.guild.name}**: Total {stats['conversions']}, Today {stats['today']}"
+            )
             return
 
-        # Re-upload any attachments the original message carried so nothing
-        # is lost besides the x.com link being swapped out.
-        files: list[discord.File] = []
-        for attachment in message.attachments:
+        rewritten = rewrite_message(message.content)
+        if rewritten:
+            await message.channel.send(f"{message.author.mention}:\n{rewritten}")
+            self.record_conversion(str(message.guild.id), str(message.id), rewritten)
             try:
-                files.append(await attachment.to_file())
-            except (discord.HTTPException, discord.DiscordException):
-                # Skip attachments we fail to fetch; better to send the
-                # rewritten text than nothing.
+                await message.delete()
+            except:
                 pass
 
-        # Mention the original author without actually pinging them:
-        # allowed_mentions suppresses the notification while keeping the
-        # mention visually clickable.
-        mention = message.author.mention
-        new_content = f"{mention}:\n{rewritten}"
+    def get_guild_stats(self, guild_id: str):
+        data = {}
+        f = Path(".fxtwitter_stats.json")
+        if f.exists():
+            data = eval(f.read_text())
+        if guild_id not in data:
+            data[guild_id] = {"conversions": 0, "today": 0, "day": None}
+        g = data[guild_id]
+        if g["day"] != datetime.now().date():
+            g["today"] = 0
+            g["day"] = datetime.now().date()
+        f.write_text(str(data))
+        return g
 
-        send_kwargs: dict = {
-            "content": new_content,
-            "allowed_mentions": discord.AllowedMentions.none(),
-        }
-        if files:
-            send_kwargs["files"] = files
-        # Carry over stickers by id where possible.
-        if message.stickers:
-            sticker_ids = [s.id for s in message.stickers if s.id is not None]
-            if sticker_ids:
-                send_kwargs["stickers"] = sticker_ids
-
-        try:
-            await message.channel.send(**send_kwargs)
-        except discord.DiscordException:
-            # If we can't send, leave the original message intact.
-            return
-
-        try:
-            await message.delete()
-        except discord.DiscordException:
-            # Best effort: the replacement was already sent.
-            pass
+    def record_conversion(self, guild_id: str, message_id: str, rewritten: str):
+        data = {}
+        f = Path(".fxtwitter_stats.json")
+        if f.exists():
+            data = eval(f.read_text())
+        if guild_id not in data:
+            data[guild_id] = {"conversions": 0, "today": 0, "day": None}
+        data[guild_id]["conversions"] += 1
+        data[guild_id]["today"] += 1
+        f.write_text(str(data))
 
 
-def main() -> None:
+def main():
     token = os.getenv("DISCORD_BOT_TOKEN")
     if not token:
-        sys.exit("DISCORD_BOT_TOKEN is not set. Put it in a .env file or export it in your shell.")
-
-    client = FxtwitterBot()
-    client.run(token)
+        print("DISCORD_BOT_TOKEN not set")
+        return
+    FxtwitterBot().run(token)
 
 
 if __name__ == "__main__":
