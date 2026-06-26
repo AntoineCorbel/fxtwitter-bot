@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from datetime import datetime
@@ -7,6 +8,8 @@ import discord
 from dotenv import load_dotenv
 
 load_dotenv()
+
+STATS_FILE = Path(".fxtwitter_stats.json")
 
 X_URL_RE = re.compile(
     r"(?P<prefix>https?://(?:www\.)?)(?P<host>x|twitter)\.com(?P<suffix>/[^\s<>\"')\]]*)",
@@ -24,51 +27,49 @@ def rewrite_message(content: str) -> str | None:
     return X_URL_RE.sub(_swap, content)
 
 
+def _load_stats() -> dict:
+    if STATS_FILE.exists():
+        return json.loads(STATS_FILE.read_text())
+    return {}
+
+
+def _guild_entry(data: dict, guild_id: str) -> dict:
+    if guild_id not in data:
+        data[guild_id] = {"conversions": 0, "today": 0, "day": None}
+    g = data[guild_id]
+    today = datetime.now().date().isoformat()
+    if g["day"] != today:
+        g["today"] = 0
+        g["day"] = today
+    return g
+
+
 class FxtwitterBot(discord.Client):
     async def on_message(self, message: discord.Message) -> None:
         if message.author.bot:
             return
 
         if message.content.lower() == "/fxtwitter stats":
-            stats = self.get_guild_stats(str(message.guild.id))
+            data = _load_stats()
+            g = _guild_entry(data, str(message.guild.id))
+            STATS_FILE.write_text(json.dumps(data))
             await message.channel.send(
-                f"Stats for **{message.guild.name}**: Total {stats['conversions']}, Today {stats['today']}"
+                f"Stats for **{message.guild.name}**: Total {g['conversions']}, Today {g['today']}"
             )
             return
 
         rewritten = rewrite_message(message.content)
         if rewritten:
             await message.channel.send(f"{message.author.mention}:\n{rewritten}")
-            self.record_conversion(str(message.guild.id), str(message.id), rewritten)
+            data = _load_stats()
+            g = _guild_entry(data, str(message.guild.id))
+            g["conversions"] += 1
+            g["today"] += 1
+            STATS_FILE.write_text(json.dumps(data))
             try:
                 await message.delete()
             except discord.HTTPException:
                 pass
-
-    def get_guild_stats(self, guild_id: str):
-        data = {}
-        f = Path(".fxtwitter_stats.json")
-        if f.exists():
-            data = eval(f.read_text())
-        if guild_id not in data:
-            data[guild_id] = {"conversions": 0, "today": 0, "day": None}
-        g = data[guild_id]
-        if g["day"] != datetime.now().date():
-            g["today"] = 0
-            g["day"] = datetime.now().date()
-        f.write_text(str(data))
-        return g
-
-    def record_conversion(self, guild_id: str, message_id: str, rewritten: str):
-        data = {}
-        f = Path(".fxtwitter_stats.json")
-        if f.exists():
-            data = eval(f.read_text())
-        if guild_id not in data:
-            data[guild_id] = {"conversions": 0, "today": 0, "day": None}
-        data[guild_id]["conversions"] += 1
-        data[guild_id]["today"] += 1
-        f.write_text(str(data))
 
 
 def main():
