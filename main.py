@@ -93,10 +93,7 @@ class FxtwitterBot(discord.Client):
 def main() -> None:
     token = os.getenv("DISCORD_BOT_TOKEN")
     if not token:
-        sys.exit(
-            "DISCORD_BOT_TOKEN is not set. "
-            "Put it in a .env file or export it in your shell."
-        )
+        sys.exit("DISCORD_BOT_TOKEN is not set. Put it in a .env file or export it in your shell.")
 
     client = FxtwitterBot()
     client.run(token)
