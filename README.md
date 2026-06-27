@@ -20,10 +20,16 @@ A Discord bot that rewrites `x.com` / `twitter.com` links to `fxtwitter.com` so 
 2. Enable the **Message Content Intent** under Bot → Privileged Gateway Intents.
 3. Copy `.env.example` to `.env` and set `DISCORD_BOT_TOKEN`.
 4. Invite the bot to your server with the **Send Messages**, **Manage Messages**, **Embed Links**, and **Attach Files** permissions.
-5. Run:
+5. Run locally:
 
 ```sh
 uv run python main.py
+```
+
+Or with Docker:
+
+```sh
+docker compose up -d
 ```
 
 ## Configuration
