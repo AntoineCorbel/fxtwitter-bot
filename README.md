@@ -5,7 +5,7 @@ A Discord bot that rewrites `x.com` / `twitter.com` links to `fxtwitter.com` so 
 ## What it does
 
 - Detects messages containing `x.com` or `twitter.com` URLs.
-- Reposts the message with only the host swapped to `fxtwitter.com` — all other text, attachments, and stickers are preserved.
+- Reposts the message with only the host swapped to `fxtwitter.com` (all other text, attachments, and stickers are preserved).
 - Attributes the original author via a non-pinging mention (`@user:`).
 - **Deletes** the original message by default (or **suppresses its embed** if configured via `/fxtwitterbot mode:suppress`).
 
