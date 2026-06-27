@@ -35,7 +35,8 @@ def _load_stats() -> dict:
 
 def _guild_entry(data: dict, guild_id: str) -> dict:
     if guild_id not in data:
-        data[guild_id] = {"conversions": 0, "today": 0, "day": None}
+        data[guild_id] = {"conversions": 0, "today": 0, "day": None, "mode": "delete"}
+    data[guild_id].setdefault("mode", "delete")
     g = data[guild_id]
     today = datetime.now().date().isoformat()
     if g["day"] != today:
@@ -62,6 +63,29 @@ class FxtwitterBot(discord.Client):
                 f"Stats for **{interaction.guild.name}**: Total {g['conversions']}, Today {g['today']}"
             )
 
+        @self.tree.command(
+            name="fxtwitterbot",
+            description="Choose what happens to the original message",
+        )
+        @discord.app_commands.describe(mode="How to handle the original message")
+        @discord.app_commands.choices(
+            mode=[
+                discord.app_commands.Choice(name="Delete original message", value="delete"),
+                discord.app_commands.Choice(
+                    name="Keep message, remove its embed", value="suppress"
+                ),
+            ]
+        )
+        async def settings(
+            interaction: discord.Interaction,
+            mode: discord.app_commands.Choice[str],
+        ):
+            data = _load_stats()
+            g = _guild_entry(data, str(interaction.guild_id))
+            g["mode"] = mode.value
+            STATS_FILE.write_text(json.dumps(data))
+            await interaction.response.send_message(f"Mode set to **{mode.name}**.")
+
     async def setup_hook(self):
         await self.tree.sync()
 
@@ -78,7 +102,10 @@ class FxtwitterBot(discord.Client):
             g["today"] += 1
             STATS_FILE.write_text(json.dumps(data))
             try:
-                await message.delete()
+                if g["mode"] == "suppress":
+                    await message.edit(suppress=True)
+                else:
+                    await message.delete()
             except discord.HTTPException:
                 pass
 

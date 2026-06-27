@@ -2,7 +2,7 @@
 
 import pytest
 
-from main import rewrite_message
+from main import _guild_entry, rewrite_message
 
 
 # ----------------------------------------------------------------- basic swap
@@ -71,3 +71,21 @@ def test_case_insensitive_host():
 def test_does_not_match_subdomain_lookalike():
     # notx.com should not be rewritten — only x.com / twitter.com hosts.
     assert rewrite_message("https://notx.com/foo") is None
+
+
+# --------------------------------------------------------------- guild mode
+
+
+def test_new_guild_defaults_to_delete_mode():
+    assert _guild_entry({}, "1")["mode"] == "delete"
+
+
+def test_legacy_guild_without_mode_gets_delete_default():
+    # Entries written before the mode setting existed must not crash.
+    data = {"1": {"conversions": 5, "today": 2, "day": None}}
+    assert _guild_entry(data, "1")["mode"] == "delete"
+
+
+def test_existing_mode_is_preserved():
+    data = {"1": {"conversions": 0, "today": 0, "day": None, "mode": "suppress"}}
+    assert _guild_entry(data, "1")["mode"] == "suppress"
