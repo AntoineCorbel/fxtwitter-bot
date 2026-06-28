@@ -86,22 +86,42 @@ class FxtwitterBot(discord.Client):
             STATS_FILE.write_text(json.dumps(data))
             await interaction.response.send_message(f"Mode set to **{mode.name}**.")
 
+    async def setup_hook(self):
+        import logging
+
+        logging.getLogger("discord").info("[fxtwitter] setup_hook called")
+
     async def on_ready(self):
+        import logging
+        import sys
+
+        log = logging.getLogger("discord")
         cmds = self.tree.get_commands()
-        print(f"[on_ready] tree has {len(cmds)} commands: {[c.name for c in cmds]}", flush=True)
+        log.info(
+            "[fxtwitter] on_ready: tree has %d commands: %s", len(cmds), [c.name for c in cmds]
+        )
+        print(f"[on_ready] tree={[c.name for c in cmds]}", file=sys.stderr, flush=True)
         try:
             synced = await self.tree.sync()
-            print(
-                f"[on_ready] synced {len(synced)} commands: {[c.name for c in synced]}", flush=True
-            )
+            log.info("[fxtwitter] synced %d commands: %s", len(synced), [c.name for c in synced])
+            print(f"[on_ready] synced={[c.name for c in synced]}", file=sys.stderr, flush=True)
             Path("/app/debug.txt").write_text(
                 f"tree_cmds={[c.name for c in cmds]}\nsynced={[c.name for c in synced]}\n"
             )
         except Exception as e:
-            print(f"[on_ready] sync FAILED: {type(e).__name__}: {e}", flush=True)
+            log.error("[fxtwitter] sync FAILED: %s: %s", type(e).__name__, e)
+            print(f"[on_ready] FAILED: {type(e).__name__}: {e}", file=sys.stderr, flush=True)
             Path("/app/debug.txt").write_text(
                 f"tree_cmds={[c.name for c in cmds]}\nsync_error={type(e).__name__}: {e}\n"
             )
+
+    async def on_error(self, event_method: str, *args, **kwargs):
+        import logging
+        import traceback
+
+        logging.getLogger("discord").error(
+            "[fxtwitter] on_error in %s:\n%s", event_method, traceback.format_exc()
+        )
 
     async def on_message(self, message: discord.Message) -> None:
         if message.author.bot:
