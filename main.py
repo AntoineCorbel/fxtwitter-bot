@@ -88,12 +88,12 @@ class FxtwitterBot(discord.Client):
             await interaction.response.send_message(f"Mode set to **{mode.name}**.")
 
     async def setup_hook(self):
-        log = logging.getLogger(__name__)
+        log = logging.getLogger("discord")
         try:
             cmds = self.tree.get_commands()
             log.warning("[setup_hook] commands in tree before sync: %s", [c.name for c in cmds])
             synced = await self.tree.sync()
-            log.warning("[setup_hook] synced %d commands: %s", len(synced), [c.name for c in synced])
+            log.warning("[setup_hook] synced %d: %s", len(synced), [c.name for c in synced])
         except Exception as e:
             log.error("[setup_hook] FAILED: %s", e, exc_info=True)
 
