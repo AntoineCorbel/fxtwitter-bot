@@ -87,6 +87,10 @@ class FxtwitterBot(discord.Client):
             await interaction.response.send_message(f"Mode set to **{mode.name}**.")
 
     async def on_ready(self):
+        cmds = self.tree.get_commands()
+        Path("/app/debug.txt").write_text(
+            f"tree_cmds={[c.name for c in cmds]}\n"
+        )
         await self.tree.sync()
 
     async def on_message(self, message: discord.Message) -> None:

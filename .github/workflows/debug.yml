@@ -19,10 +19,10 @@ jobs:
             TOKEN=$(grep DISCORD_BOT_TOKEN .env | cut -d= -f2)
             echo "=== Container status ==="
             docker compose ps
-            echo "=== Last 30 log lines ==="
+            echo "=== Last 100 log lines ==="
             docker compose logs --tail 100
-            echo "=== HTTP connectivity from inside container ==="
-            docker compose exec -T bot python3 -c "import urllib.request; print(urllib.request.urlopen('https://discord.com/api/v10/gateway', timeout=5).status)" 2>&1 || echo "FAILED"
+            echo "=== on_ready debug file ==="
+            docker compose exec -T bot cat /app/debug.txt 2>&1 || echo "FILE NOT FOUND (on_ready may not have run)"
             echo "=== Global registered commands (from host) ==="
             curl -s -H "Authorization: Bot $TOKEN" \
               https://discord.com/api/v10/applications/1520012720194326606/commands | python3 -m json.tool
