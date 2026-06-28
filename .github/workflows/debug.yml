@@ -22,7 +22,7 @@ jobs:
             echo "=== Last 30 log lines ==="
             docker compose logs --tail 30
             echo "=== setup_hook debug file ==="
-            docker compose exec -T bot cat /tmp/setup_hook.txt 2>&1 || echo "(file not found)"
+            docker compose exec -T bot cat /tmp/sync_debug.txt 2>&1 || echo "(file not found)"
             echo "=== Global registered commands ==="
             curl -s -H "Authorization: Bot $TOKEN" \
               https://discord.com/api/v10/applications/1520012720194326606/commands | python3 -m json.tool

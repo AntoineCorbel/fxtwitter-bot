@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 import re
 from datetime import datetime
@@ -87,15 +86,12 @@ class FxtwitterBot(discord.Client):
             STATS_FILE.write_text(json.dumps(data))
             await interaction.response.send_message(f"Mode set to **{mode.name}**.")
 
-    async def setup_hook(self):
+    async def on_ready(self):
         try:
-            cmds = self.tree.get_commands()
             synced = await self.tree.sync()
-            Path("/tmp/setup_hook.txt").write_text(
-                f"before={[c.name for c in cmds]}\nsynced={[c.name for c in synced]}\n"
-            )
+            Path("/tmp/sync_debug.txt").write_text(f"synced={[c.name for c in synced]}\n")
         except Exception as e:
-            Path("/tmp/setup_hook.txt").write_text(f"ERROR: {e}\n")
+            Path("/tmp/sync_debug.txt").write_text(f"ERROR: {e}\n")
 
     async def on_message(self, message: discord.Message) -> None:
         if message.author.bot:
