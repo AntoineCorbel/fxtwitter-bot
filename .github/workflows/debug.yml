@@ -21,9 +21,8 @@ jobs:
             docker compose ps
             echo "=== Last 30 log lines ==="
             docker compose logs --tail 30
-            echo "=== Bot application info ==="
-            curl -s -H "Authorization: Bot $TOKEN" \
-              https://discord.com/api/v10/applications/@me | python3 -c "import sys,json; d=json.load(sys.stdin); print('App ID:', d.get('id'), 'Name:', d.get('name'))"
+            echo "=== setup_hook debug file ==="
+            docker compose exec -T bot cat /tmp/setup_hook.txt 2>&1 || echo "(file not found)"
             echo "=== Global registered commands ==="
             curl -s -H "Authorization: Bot $TOKEN" \
-              https://discord.com/api/v10/applications/@me/commands | python3 -m json.tool
+              https://discord.com/api/v10/applications/1520012720194326606/commands | python3 -m json.tool
