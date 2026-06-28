@@ -19,8 +19,11 @@ A Discord bot that rewrites `x.com` / `twitter.com` links to `fxtwitter.com` so 
 1. Create a bot in the [Discord Developer Portal](https://discord.com/developers/applications).
 2. Enable the **Message Content Intent** under Bot → Privileged Gateway Intents.
 3. Copy `.env.example` to `.env` and set `DISCORD_BOT_TOKEN`.
-4. Invite the bot to your server with the **Send Messages**, **Manage Messages**, **Embed Links**, and **Attach Files** permissions.
-5. Run locally:
+4. Invite the bot to your server with both OAuth scopes:
+   - `bot`
+   - `applications.commands`
+5. Give it the **View Channels**, **Send Messages**, **Manage Messages**, and **Embed Links** permissions.
+6. Run locally:
 
 ```sh
 uv run python main.py

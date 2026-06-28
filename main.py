@@ -87,38 +87,8 @@ class FxtwitterBot(discord.Client):
             await interaction.response.send_message(f"Mode set to **{mode.name}**.")
 
     async def setup_hook(self):
-        import os
-
-        os.write(2, b"[fxtwitter] setup_hook called\n")
-        Path("/app/setup_hook.txt").write_text("setup_hook called\n")
-
-    async def on_ready(self):
-        import os
-
-        os.write(2, b"[fxtwitter] on_ready called\n")
-        cmds = self.tree.get_commands()
-        msg = f"[fxtwitter] on_ready: tree={[c.name for c in cmds]}\n"
-        os.write(2, msg.encode())
-        try:
-            synced = await self.tree.sync()
-            result = f"[fxtwitter] synced={[c.name for c in synced]}\n"
-            os.write(2, result.encode())
-            Path("/app/debug.txt").write_text(
-                f"tree_cmds={[c.name for c in cmds]}\nsynced={[c.name for c in synced]}\n"
-            )
-        except Exception as e:
-            err = f"[fxtwitter] sync FAILED: {type(e).__name__}: {e}\n"
-            os.write(2, err.encode())
-            Path("/app/debug.txt").write_text(
-                f"tree_cmds={[c.name for c in cmds]}\nsync_error={type(e).__name__}: {e}\n"
-            )
-
-    async def on_error(self, event_method: str, *args, **kwargs):
-        import os
-        import traceback
-
-        err = f"[fxtwitter] on_error in {event_method}:\n{traceback.format_exc()}\n"
-        os.write(2, err.encode())
+        synced = await self.tree.sync()
+        print(f"Synced {len(synced)} global slash commands")
 
     async def on_message(self, message: discord.Message) -> None:
         if message.author.bot:
