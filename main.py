@@ -87,41 +87,38 @@ class FxtwitterBot(discord.Client):
             await interaction.response.send_message(f"Mode set to **{mode.name}**.")
 
     async def setup_hook(self):
-        import logging
+        import os
 
-        logging.getLogger("discord").info("[fxtwitter] setup_hook called")
+        os.write(2, b"[fxtwitter] setup_hook called\n")
+        Path("/app/setup_hook.txt").write_text("setup_hook called\n")
 
     async def on_ready(self):
-        import logging
-        import sys
+        import os
 
-        log = logging.getLogger("discord")
+        os.write(2, b"[fxtwitter] on_ready called\n")
         cmds = self.tree.get_commands()
-        log.info(
-            "[fxtwitter] on_ready: tree has %d commands: %s", len(cmds), [c.name for c in cmds]
-        )
-        print(f"[on_ready] tree={[c.name for c in cmds]}", file=sys.stderr, flush=True)
+        msg = f"[fxtwitter] on_ready: tree={[c.name for c in cmds]}\n"
+        os.write(2, msg.encode())
         try:
             synced = await self.tree.sync()
-            log.info("[fxtwitter] synced %d commands: %s", len(synced), [c.name for c in synced])
-            print(f"[on_ready] synced={[c.name for c in synced]}", file=sys.stderr, flush=True)
+            result = f"[fxtwitter] synced={[c.name for c in synced]}\n"
+            os.write(2, result.encode())
             Path("/app/debug.txt").write_text(
                 f"tree_cmds={[c.name for c in cmds]}\nsynced={[c.name for c in synced]}\n"
             )
         except Exception as e:
-            log.error("[fxtwitter] sync FAILED: %s: %s", type(e).__name__, e)
-            print(f"[on_ready] FAILED: {type(e).__name__}: {e}", file=sys.stderr, flush=True)
+            err = f"[fxtwitter] sync FAILED: {type(e).__name__}: {e}\n"
+            os.write(2, err.encode())
             Path("/app/debug.txt").write_text(
                 f"tree_cmds={[c.name for c in cmds]}\nsync_error={type(e).__name__}: {e}\n"
             )
 
     async def on_error(self, event_method: str, *args, **kwargs):
-        import logging
+        import os
         import traceback
 
-        logging.getLogger("discord").error(
-            "[fxtwitter] on_error in %s:\n%s", event_method, traceback.format_exc()
-        )
+        err = f"[fxtwitter] on_error in {event_method}:\n{traceback.format_exc()}\n"
+        os.write(2, err.encode())
 
     async def on_message(self, message: discord.Message) -> None:
         if message.author.bot:
