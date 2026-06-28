@@ -88,10 +88,20 @@ class FxtwitterBot(discord.Client):
 
     async def on_ready(self):
         cmds = self.tree.get_commands()
-        Path("/app/debug.txt").write_text(
-            f"tree_cmds={[c.name for c in cmds]}\n"
-        )
-        await self.tree.sync()
+        print(f"[on_ready] tree has {len(cmds)} commands: {[c.name for c in cmds]}", flush=True)
+        try:
+            synced = await self.tree.sync()
+            print(
+                f"[on_ready] synced {len(synced)} commands: {[c.name for c in synced]}", flush=True
+            )
+            Path("/app/debug.txt").write_text(
+                f"tree_cmds={[c.name for c in cmds]}\nsynced={[c.name for c in synced]}\n"
+            )
+        except Exception as e:
+            print(f"[on_ready] sync FAILED: {type(e).__name__}: {e}", flush=True)
+            Path("/app/debug.txt").write_text(
+                f"tree_cmds={[c.name for c in cmds]}\nsync_error={type(e).__name__}: {e}\n"
+            )
 
     async def on_message(self, message: discord.Message) -> None:
         if message.author.bot:
