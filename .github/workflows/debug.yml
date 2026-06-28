@@ -22,35 +22,9 @@ jobs:
             echo "=== Last 100 log lines ==="
             docker compose logs --tail 100
             echo "=== on_ready debug file ==="
-            docker compose exec -T bot cat /app/debug.txt 2>&1 || echo "FILE NOT FOUND (on_ready may not have run)"
+            docker compose exec -T bot cat /app/debug.txt 2>&1 || echo "FILE NOT FOUND"
             echo "=== Direct REST API command registration test ==="
-            docker compose exec -T bot python3 -c "
-import urllib.request, urllib.error, json, os
-from dotenv import load_dotenv
-load_dotenv()
-token = os.getenv('DISCORD_BOT_TOKEN')
-
-# Get app info
-req = urllib.request.Request('https://discord.com/api/v10/applications/@me', headers={'Authorization': f'Bot {token}', 'User-Agent': 'DiscordBot (test, 1.0)'})
-try:
-    with urllib.request.urlopen(req) as r:
-        app = json.loads(r.read())
-        print(f'App ID: {app[\"id\"]}, Name: {app[\"name\"]}')
-        app_id = app['id']
-except urllib.error.HTTPError as e:
-    print(f'GET /applications/@me failed: {e.code} {e.read()}')
-    exit(1)
-
-# Try registering a minimal slash command
-payload = json.dumps([{'name': 'fxtwitter', 'description': 'Stats', 'type': 1}]).encode()
-req2 = urllib.request.Request(f'https://discord.com/api/v10/applications/{app_id}/commands', data=payload, method='PUT', headers={'Authorization': f'Bot {token}', 'Content-Type': 'application/json', 'User-Agent': 'DiscordBot (test, 1.0)'})
-try:
-    with urllib.request.urlopen(req2) as r:
-        cmds = json.loads(r.read())
-        print(f'PUT commands OK: {[c[\"name\"] for c in cmds]}')
-except urllib.error.HTTPError as e:
-    print(f'PUT commands failed: {e.code} {e.read().decode()}')
-" 2>&1
+            docker compose exec -T bot python3 -c "import urllib.request,urllib.error,json,os; from dotenv import load_dotenv; load_dotenv(); token=os.getenv('DISCORD_BOT_TOKEN'); req=urllib.request.Request('https://discord.com/api/v10/applications/@me',headers={'Authorization':f'Bot {token}','User-Agent':'DiscordBot'}); r=urllib.request.urlopen(req); app=json.loads(r.read()); print('App:',app['id'],app['name']); app_id=app['id']; payload=json.dumps([{'name':'fxtwitter','description':'Stats','type':1}]).encode(); req2=urllib.request.Request(f'https://discord.com/api/v10/applications/{app_id}/commands',data=payload,method='PUT',headers={'Authorization':f'Bot {token}','Content-Type':'application/json','User-Agent':'DiscordBot'}); r2=urllib.request.urlopen(req2); print('PUT OK:',[c['name'] for c in json.loads(r2.read())])" 2>&1 || echo "REST TEST FAILED"
             echo "=== Global registered commands (from host) ==="
             curl -s -H "Authorization: Bot $TOKEN" \
               https://discord.com/api/v10/applications/1520012720194326606/commands | python3 -m json.tool
