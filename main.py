@@ -87,11 +87,7 @@ class FxtwitterBot(discord.Client):
             await interaction.response.send_message(f"Mode set to **{mode.name}**.")
 
     async def on_ready(self):
-        try:
-            synced = await self.tree.sync()
-            Path("/tmp/sync_debug.txt").write_text(f"synced={[c.name for c in synced]}\n")
-        except Exception as e:
-            Path("/tmp/sync_debug.txt").write_text(f"ERROR: {e}\n")
+        await self.tree.sync()
 
     async def on_message(self, message: discord.Message) -> None:
         if message.author.bot:
