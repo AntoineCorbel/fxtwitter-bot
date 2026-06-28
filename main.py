@@ -87,7 +87,10 @@ class FxtwitterBot(discord.Client):
             await interaction.response.send_message(f"Mode set to **{mode.name}**.")
 
     async def setup_hook(self):
-        await self.tree.sync()
+        cmds = self.tree.get_commands()
+        print(f"[setup_hook] commands in tree before sync: {[c.name for c in cmds]}", flush=True)
+        synced = await self.tree.sync()
+        print(f"[setup_hook] synced {len(synced)} commands: {[c.name for c in synced]}", flush=True)
 
     async def on_message(self, message: discord.Message) -> None:
         if message.author.bot:
